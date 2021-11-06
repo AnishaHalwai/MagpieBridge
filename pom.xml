@@ -30,7 +30,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<wala.version>1.5.4</wala.version>
+		<wala.version>1.5.8-SNAPSHOT</wala.version>
 		<lsp4j.version>0.8.1</lsp4j.version>
 		<javaparser.version>3.13.0</javaparser.version>
 		<commonio.version>2.7</commonio.version>
@@ -64,6 +64,16 @@
 		<dependency>
 			<groupId>com.ibm.wala</groupId>
 			<artifactId>com.ibm.wala.cast</artifactId>
+			<version>${wala.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ibm.wala</groupId>
+			<artifactId>com.ibm.wala.cast.java</artifactId>
+			<version>${wala.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ibm.wala</groupId>
+			<artifactId>com.ibm.wala.cast.java.ecj</artifactId>
 			<version>${wala.version}</version>
 		</dependency>
 		<dependency>
