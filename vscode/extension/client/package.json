@@ -1,13 +1,13 @@
 {
-    "name": "zhinu-magpie-client",
-    "description": "magpie for 织女",
-    "author": "Julian Dolby",
+    "name": "nullpointer-magpie-client",
+    "description": "nullpointer analysis for vscode",
+    "author": "Tenzin Ghongwatsang, Anisha Halwai,Julian Dolby",
     "license": "EPL",
     "version": "0.0.1",
     "publisher": "Julian Dolby",
     "repository": {
         "type": "git",
-        "url": "git@github.com:juliandolby/织女vscode.git"
+        "url": "git@github.com:AnishaHalwai/MagpieBridge.git"
     },
     "scripts": {
         "update-vscode": "vscode-install"

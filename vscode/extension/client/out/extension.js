@@ -18,17 +18,15 @@ function activate(context) {
         command: "java",
         args: [
             //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=localhost:8111",
-            "-jar",
-            path.resolve(__dirname, '../../resources') + '/zhinu-0.0.1-SNAPSHOT-织女.jar'
+            "-cp",
+            path.resolve(__dirname, '../../resources') + '/magpiebridge-0.1.3-SNAPSHOT.jar',
+            "magpiebridge.examples.NullPointerExampleServer"
         ]
     };
     // Options to control the language client
     let clientOptions = {
         // Register the server for plain text documents
         documentSelector: [
-            { scheme: 'file', language: 'python' },
-            { scheme: 'file', language: 'javascript' },
-            { scheme: 'file', language: 'html' },
             { scheme: 'file', language: 'java' }
         ]
     };
