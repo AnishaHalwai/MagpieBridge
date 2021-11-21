@@ -12,6 +12,8 @@ import com.ibm.wala.cast.loader.AstMethod;
 import com.ibm.wala.cast.tree.CAstSourcePositionMap;
 import com.ibm.wala.classLoader.ClassLoaderFactory;
 import com.ibm.wala.classLoader.Module;
+import com.ibm.wala.classLoader.SourceDirectoryTreeModule;
+import com.ibm.wala.classLoader.SourceModule;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
@@ -33,17 +35,30 @@ import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.graph.GraphIntegrity;
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.jar.JarFile;
-import magpiebridge.core.AnalysisConsumer;
-import magpiebridge.core.AnalysisResult;
-import magpiebridge.core.Kind;
-import magpiebridge.core.ServerAnalysis;
+import magpiebridge.core.*;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.MessageParams;
 
 public class NullPointerExample implements ServerAnalysis {
+
+  public static String extractPath(String fullpath) {
+    String ans = "";
+
+    String java = "/java/";
+    Integer found_java = fullpath.indexOf(java);
+    if (found_java >= 0) {
+      found_java += java.length();
+      ans = fullpath.substring(0, found_java);
+      return ans;
+    } else {
+      return "Wrong path";
+    }
+  }
 
   @Override
   public String source() {
@@ -63,7 +78,24 @@ public class NullPointerExample implements ServerAnalysis {
     try {
       AnalysisScope scope = new JavaSourceAnalysisScope();
       for (Module m : files) {
-        scope.addToScope(JavaSourceAnalysisScope.SOURCE, m);
+        if (m instanceof SourceModule) {
+          if (((SourceModule) m).getURL().getProtocol().equals("file")) {
+            String path = ((SourceModule) m).getURL().getFile();
+
+            if (path.indexOf("/src/") > 0 && path.indexOf("/java/") > 0) {
+              String srcdir = extractPath(path);
+              Module file = new SourceDirectoryTreeModule(new File(srcdir));
+              scope.addToScope(JavaSourceAnalysisScope.SOURCE, file);
+              if (server instanceof MagpieServer) {
+                MessageParams msg = new MessageParams();
+                msg.setMessage("Using " + file);
+                ((MagpieServer) server).getClient().showMessage(msg);
+              }
+              continue;
+            }
+          }
+          scope.addToScope(JavaSourceAnalysisScope.SOURCE, m);
+        }
       }
       String[] stdlibs = WalaProperties.getJ2SEJarFiles();
       for (String stdlib : stdlibs) {
