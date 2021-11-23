@@ -10,10 +10,8 @@ import com.ibm.wala.cast.java.ipa.callgraph.JavaSourceAnalysisScope;
 import com.ibm.wala.cast.java.translator.jdt.ecj.ECJClassLoaderFactory;
 import com.ibm.wala.cast.loader.AstMethod;
 import com.ibm.wala.cast.tree.CAstSourcePositionMap;
-import com.ibm.wala.classLoader.ClassLoaderFactory;
+import com.ibm.wala.classLoader.*;
 import com.ibm.wala.classLoader.Module;
-import com.ibm.wala.classLoader.SourceDirectoryTreeModule;
-import com.ibm.wala.classLoader.SourceModule;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
@@ -36,11 +34,15 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.graph.GraphIntegrity;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarFile;
 import magpiebridge.core.*;
+import magpiebridge.file.SourceFileManager;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.MessageParams;
 
@@ -76,26 +78,43 @@ public class NullPointerExample implements ServerAnalysis {
   @Override
   public void analyze(Collection<? extends Module> files, AnalysisConsumer server, boolean rerun) {
     try {
+      FileWriter f = new FileWriter("/tmp/null.log");
+      f.write(server.toString() + "\n");
       AnalysisScope scope = new JavaSourceAnalysisScope();
       for (Module m : files) {
+        f.write(m.toString() + "\n");
         if (m instanceof SourceModule) {
           if (((SourceModule) m).getURL().getProtocol().equals("file")) {
-            String path = ((SourceModule) m).getURL().getFile();
 
-            if (path.indexOf("/src/") > 0 && path.indexOf("/java/") > 0) {
-              String srcdir = extractPath(path);
-              Module file = new SourceDirectoryTreeModule(new File(srcdir));
-              scope.addToScope(JavaSourceAnalysisScope.SOURCE, file);
-              if (server instanceof MagpieServer) {
-                MessageParams msg = new MessageParams();
-                msg.setMessage("Using " + file);
-                ((MagpieServer) server).getClient().showMessage(msg);
+            if (server instanceof MagpieServer) {
+              SourceFileManager sfm = ((MagpieServer) server).getSourceFileManager("java");
+              f.write(sfm.toString() + "\n");
+              f.write(sfm.getSourceFileModules().toString() + "\n");
+
+              for (Map.Entry<URI, SourceFileModule> x : sfm.getSourceFileModules().entrySet()) {
+                if (x.getValue() == m) {
+                  f.write(x.getKey().toString() + "\n");
+                  String path = x.getKey().getPath();
+                  f.write(path + "\n");
+                  if (path.indexOf("/src/") > 0 && path.indexOf("/java/") > 0) {
+                    String srcdir = extractPath(path);
+                    f.write(srcdir + "\n");
+                    Module file = new SourceDirectoryTreeModule(new File(srcdir));
+                    scope.addToScope(JavaSourceAnalysisScope.SOURCE, file);
+                    if (server instanceof MagpieServer) {
+                      MessageParams msg = new MessageParams();
+                      msg.setMessage("Using " + file);
+                      ((MagpieServer) server).getClient().showMessage(msg);
+                    }
+                    continue;
+                  }
+                }
               }
-              continue;
             }
           }
           scope.addToScope(JavaSourceAnalysisScope.SOURCE, m);
         }
+        f.flush();
       }
       String[] stdlibs = WalaProperties.getJ2SEJarFiles();
       for (String stdlib : stdlibs) {
@@ -197,5 +216,8 @@ public class NullPointerExample implements ServerAnalysis {
     } catch (CancelException e) {
       e.printStackTrace();
     }
+    //    catch (URISyntaxException e) {
+    //        e.printStackTrace();
+    //    }
   }
 }
