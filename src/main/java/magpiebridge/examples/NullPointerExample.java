@@ -123,7 +123,13 @@ public class NullPointerExample implements ServerAnalysis {
 
       // -----------
       ClassHierarchy cha = ClassHierarchyFactory.make(scope, getLoaderFactory(scope));
-      Iterable<Entrypoint> entrypoints = Util.makeMainEntrypoints(cha);
+      Iterable<Entrypoint> entrypoints =
+          Util.makeMainEntrypoints(JavaSourceAnalysisScope.SOURCE, cha);
+      //      MessageParams msg = new MessageParams();
+      //      msg.setMessage("Found Entrypoints" + entrypoints);
+      //      ((MagpieServer) server).getClient().showMessage(msg);
+      entrypoints.forEach(x -> System.err.println(x));
+      //      System.err.println("Found Entrypoints" + entrypoints.forEach());
       AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
       options.setEntrypoints(entrypoints);
       options
@@ -151,9 +157,15 @@ public class NullPointerExample implements ServerAnalysis {
       InterprocAnalysisResult<SSAInstruction, IExplodedBasicBlock> interExplodedCFG =
           NullPointerAnalysis.computeInterprocAnalysis(cg, new NullProgressMonitor());
       Set<AnalysisResult> results = HashSetFactory.make();
+      MessageParams msg = new MessageParams();
+      msg.setMessage("cg " + cg.getNumberOfNodes());
+      ((MagpieServer) server).getClient().showMessage(msg);
       cg.forEach(
           Node -> {
             IR ir = Node.getIR();
+            if (!(Node.getMethod() instanceof AstMethod)) {
+              return;
+            }
             AstMethod asm = (AstMethod) Node.getMethod();
             ExceptionPruningAnalysis<SSAInstruction, IExplodedBasicBlock> intraExplodedCFG =
                 interExplodedCFG.getResult(Node);
@@ -205,6 +217,9 @@ public class NullPointerExample implements ServerAnalysis {
                           });
                     });
           });
+      msg = new MessageParams();
+      msg.setMessage("Found " + results.size());
+      ((MagpieServer) server).getClient().showMessage(msg);
       server.consume(results, "NullPointerExample");
 
     } catch (ClassHierarchyException | IOException | CallGraphBuilderCancelException e) {
