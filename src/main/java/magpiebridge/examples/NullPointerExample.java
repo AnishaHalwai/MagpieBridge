@@ -172,49 +172,51 @@ public class NullPointerExample implements ServerAnalysis {
             ir.iterateAllInstructions()
                 .forEachRemaining(
                     s -> {
-                      IExplodedBasicBlock bb =
-                          intraExplodedCFG.getCFG().getBlockForInstruction(s.iIndex());
-                      NullPointerState.State state =
-                          intraExplodedCFG.getState(bb).getState(s.getDef());
-                      results.add(
-                          new AnalysisResult() {
+                      if (s.iIndex() >= 0) {
+                        IExplodedBasicBlock bb =
+                            intraExplodedCFG.getCFG().getBlockForInstruction(s.iIndex());
+                        NullPointerState.State state =
+                            intraExplodedCFG.getState(bb).getState(s.getDef());
+                        results.add(
+                            new AnalysisResult() {
 
-                            @Override
-                            public Kind kind() {
-                              return Kind.Diagnostic;
-                            }
+                              @Override
+                              public Kind kind() {
+                                return Kind.Diagnostic;
+                              }
 
-                            @Override
-                            public String toString(boolean useMarkdown) {
-                              return state.toString();
-                            }
+                              @Override
+                              public String toString(boolean useMarkdown) {
+                                return state.toString();
+                              }
 
-                            @Override
-                            public CAstSourcePositionMap.Position position() {
-                              return asm.debugInfo().getInstructionPosition(s.iIndex());
-                            }
+                              @Override
+                              public CAstSourcePositionMap.Position position() {
+                                return asm.debugInfo().getInstructionPosition(s.iIndex());
+                              }
 
-                            @Override
-                            public Iterable<Pair<CAstSourcePositionMap.Position, String>>
-                                related() {
-                              return null;
-                            }
+                              @Override
+                              public Iterable<Pair<CAstSourcePositionMap.Position, String>>
+                                  related() {
+                                return null;
+                              }
 
-                            @Override
-                            public DiagnosticSeverity severity() {
-                              return DiagnosticSeverity.Information;
-                            }
+                              @Override
+                              public DiagnosticSeverity severity() {
+                                return DiagnosticSeverity.Information;
+                              }
 
-                            @Override
-                            public Pair<CAstSourcePositionMap.Position, String> repair() {
-                              return null;
-                            }
+                              @Override
+                              public Pair<CAstSourcePositionMap.Position, String> repair() {
+                                return null;
+                              }
 
-                            @Override
-                            public String code() {
-                              return null;
-                            }
-                          });
+                              @Override
+                              public String code() {
+                                return null;
+                              }
+                            });
+                      }
                     });
           });
       msg = new MessageParams();
