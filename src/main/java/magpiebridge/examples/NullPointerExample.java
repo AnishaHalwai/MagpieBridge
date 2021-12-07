@@ -10,6 +10,7 @@ import com.ibm.wala.cast.java.ipa.callgraph.JavaSourceAnalysisScope;
 import com.ibm.wala.cast.java.translator.jdt.ecj.ECJClassLoaderFactory;
 import com.ibm.wala.cast.loader.AstMethod;
 import com.ibm.wala.cast.tree.CAstSourcePositionMap;
+import com.ibm.wala.cfg.ControlFlowGraph;
 import com.ibm.wala.classLoader.*;
 import com.ibm.wala.classLoader.Module;
 import com.ibm.wala.ipa.callgraph.*;
@@ -169,55 +170,67 @@ public class NullPointerExample implements ServerAnalysis {
             AstMethod asm = (AstMethod) Node.getMethod();
             ExceptionPruningAnalysis<SSAInstruction, IExplodedBasicBlock> intraExplodedCFG =
                 interExplodedCFG.getResult(Node);
-            ir.iterateAllInstructions()
-                .forEachRemaining(
-                    s -> {
-                      if (s.iIndex() >= 0) {
-                        IExplodedBasicBlock bb =
-                            intraExplodedCFG.getCFG().getBlockForInstruction(s.iIndex());
-                        NullPointerState.State state =
-                            intraExplodedCFG.getState(bb).getState(s.getDef());
-                        results.add(
-                            new AnalysisResult() {
+            if (intraExplodedCFG != null) {
+              ControlFlowGraph<SSAInstruction, IExplodedBasicBlock> cfg = intraExplodedCFG.getCFG();
 
-                              @Override
-                              public Kind kind() {
-                                return Kind.Diagnostic;
-                              }
+              ir.iterateAllInstructions()
+                  .forEachRemaining(
+                      s -> {
+                        if (s.iIndex() >= 0) {
+                          IExplodedBasicBlock bb = cfg.getBlockForInstruction(s.iIndex());
+                          NullPointerState state1 = intraExplodedCFG.getState(bb);
+                          if (state1 != null) {
+                            for (int i = 0; i < s.getNumberOfUses(); i++) {
+                              if (s.getUse(i) != -1
+                                  && asm.debugInfo().getOperandPosition(s.iIndex(), i) != null) {
 
-                              @Override
-                              public String toString(boolean useMarkdown) {
-                                return state.toString();
-                              }
+                                NullPointerState.State state = state1.getState(s.getUse(i));
+                                int bad = i;
+                                results.add(
+                                    new AnalysisResult() {
 
-                              @Override
-                              public CAstSourcePositionMap.Position position() {
-                                return asm.debugInfo().getInstructionPosition(s.iIndex());
-                              }
+                                      @Override
+                                      public Kind kind() {
+                                        return Kind.Diagnostic;
+                                      }
 
-                              @Override
-                              public Iterable<Pair<CAstSourcePositionMap.Position, String>>
-                                  related() {
-                                return null;
-                              }
+                                      @Override
+                                      public String toString(boolean useMarkdown) {
+                                        return state.toString();
+                                      }
 
-                              @Override
-                              public DiagnosticSeverity severity() {
-                                return DiagnosticSeverity.Information;
-                              }
+                                      @Override
+                                      public CAstSourcePositionMap.Position position() {
+                                        return asm.debugInfo().getOperandPosition(s.iIndex(), bad);
+                                      }
 
-                              @Override
-                              public Pair<CAstSourcePositionMap.Position, String> repair() {
-                                return null;
-                              }
+                                      @Override
+                                      public Iterable<Pair<CAstSourcePositionMap.Position, String>>
+                                          related() {
+                                        return null;
+                                      }
 
-                              @Override
-                              public String code() {
-                                return null;
+                                      @Override
+                                      public DiagnosticSeverity severity() {
+                                        return DiagnosticSeverity.Information;
+                                      }
+
+                                      @Override
+                                      public Pair<CAstSourcePositionMap.Position, String> repair() {
+                                        return null;
+                                      }
+
+                                      @Override
+                                      public String code() {
+                                        return null;
+                                      }
+                                    });
                               }
-                            });
-                      }
-                    });
+                            }
+                          }
+                        }
+                      });
+            }
           });
       msg = new MessageParams();
       msg.setMessage("Found " + results.size());
